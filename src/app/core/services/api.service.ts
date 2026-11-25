@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   BackupItem,
@@ -113,7 +113,15 @@ export class ApiService {
 
   // Users & Officers
   getUsers(): Observable<UserProfile[]> {
-    return this.http.get<UserProfile[]>(`${this.baseUrl}/users`);
+    return this.http.get<any[]>(`${this.baseUrl}/users`).pipe(
+      map(users => users.map(u => ({
+        ...u,
+        email: u.email || u.username || '',
+        full_name: u.full_name || u.display_name || u.username || '',
+        assigned_tower_id: u.assigned_tower_id || u.assigned_tower?.id || null,
+        assigned_tower_name: u.assigned_tower_name || u.assigned_tower?.name || null
+      })))
+    );
   }
 
   createUser(userData: {
@@ -131,9 +139,10 @@ export class ApiService {
   }
 
   // Photos
-  getPhotoUrl(filename: string): string {
-    if (!filename) return '';
-    if (filename.startsWith('http://') || filename.startsWith('https://')) return filename;
-    return `${this.baseUrl}/photos/${filename}`;
+  getPhotoUrl(filenameOrId: string): string {
+    if (!filenameOrId) return '';
+    if (filenameOrId.startsWith('http://') || filenameOrId.startsWith('https://')) return filenameOrId;
+    const clean = filenameOrId.replace(/^(\/api\/photos\/|\/photos\/)/, '');
+    return `${this.baseUrl}/photos/${clean}`;
   }
 }

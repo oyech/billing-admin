@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginResponse, UserProfile } from '../models';
 
@@ -25,15 +25,23 @@ export class AuthService {
   ) {}
 
   login(credentials: { email: string; password: string }): Observable<LoginResponse> {
-    const body = new URLSearchParams();
-    body.set('username', credentials.email);
-    body.set('password', credentials.password);
-
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, body.toString(), {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    return this.http.post<any>(`${environment.apiUrl}/auth/login`, {
+      username: credentials.email,
+      password: credentials.password
     }).pipe(
-      tap(res => {
-        this.setSession(res);
+      map((res: any): LoginResponse => {
+        const token = res.token;
+        const user = res.user;
+        const mapped: LoginResponse = {
+          access_token: token,
+          token_type: res.token_type || 'bearer',
+          role: user.role,
+          user_id: user.id,
+          email: user.username,
+          full_name: user.display_name
+        };
+        this.setSession(mapped);
+        return mapped;
       })
     );
   }
@@ -54,10 +62,20 @@ export class AuthService {
   }
 
   fetchMe(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${environment.apiUrl}/auth/me`).pipe(
-      tap(user => {
-        this.currentUserSignal.set(user);
-        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    return this.http.get<any>(`${environment.apiUrl}/auth/me`).pipe(
+      map((user: any): UserProfile => {
+        const mapped: UserProfile = {
+          id: user.id,
+          email: user.username || user.email || '',
+          full_name: user.display_name || user.full_name || user.username || '',
+          role: user.role,
+          active: user.active ?? true,
+          assigned_tower_id: user.assigned_tower?.id || user.assigned_tower_id || null,
+          assigned_tower_name: user.assigned_tower?.name || user.assigned_tower_name || null
+        };
+        this.currentUserSignal.set(mapped);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(mapped));
+        return mapped;
       })
     );
   }

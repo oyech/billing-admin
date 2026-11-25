@@ -26,13 +26,13 @@ import { AuthService } from '../../core/services/auth.service';
 
         <form (ngSubmit)="onSubmit()" class="login-form">
           <div class="form-group">
-            <label for="email">Email Admin / Petugas</label>
+            <label for="email">Username Admin / Petugas</label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               [(ngModel)]="email"
-              placeholder="admin@tares.id"
+              placeholder="Admin"
               required
               [disabled]="isLoading()"
             />
@@ -66,14 +66,14 @@ import { AuthService } from '../../core/services/auth.service';
             <button
               type="button"
               class="chip-btn"
-              (click)="fillCredentials('admin@tares.id', 'AdminPass123!')"
+              (click)="fillCredentials('Admin', 'tares001')"
             >
               👑 Admin
             </button>
             <button
               type="button"
               class="chip-btn"
-              (click)="fillCredentials('petugas@tares.id', 'PetugasPass123!')"
+              (click)="fillCredentials('Tower A', 'user001')"
             >
               👷 Petugas Lapangan
             </button>

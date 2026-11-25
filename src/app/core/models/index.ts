@@ -4,8 +4,11 @@ export interface UserProfile {
   full_name: string;
   role: 'admin' | 'petugas';
   active: boolean;
+  username?: string;
+  display_name?: string;
   assigned_tower_id?: string | null;
   assigned_tower_name?: string | null;
+  assigned_tower?: Tower | null;
   created_at?: string;
 }
 
@@ -55,6 +58,7 @@ export interface MeterReading {
   sync_status: string;
   notes?: string | null;
   officer_name?: string | null;
+  user_id?: string | null;
   photo_filename?: string | null;
   photo_url?: string | null;
   has_photo?: boolean;
