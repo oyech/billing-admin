@@ -31,11 +31,13 @@ export interface Tower {
 export interface ReadingPeriod {
   id: string;
   period_month: string;
-  status: 'draft' | 'active' | 'closed';
+  status: 'draft' | 'open' | 'active' | 'closing' | 'closed' | string;
   opened_by?: string;
   opened_at?: string;
   closed_by?: string;
   closed_at?: string;
+  readings_count?: number;
+  is_baseline?: boolean;
 }
 
 export interface MeterReading {

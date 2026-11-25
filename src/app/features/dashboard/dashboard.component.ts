@@ -39,6 +39,17 @@ import {
             <span>{{ isServerOnline() ? 'Server ONLINE' : 'Server OFFLINE' }}</span>
           </div>
 
+          <!-- Active Period Pill Indicator -->
+          @if (currentPeriod(); as cp) {
+            <div class="period-header-pill" title="Periode data yang sedang aktif ditampilkan">
+              <span class="btn-icon">📅</span>
+              <span>Periode: <strong>{{ cp.period_month }}</strong></span>
+              <span class="period-pill-status" [class.open]="cp.status === 'open' || cp.status === 'active'">
+                {{ cp.status === 'open' || cp.status === 'active' ? 'Aktif' : (cp.status === 'closed' ? 'Tutup' : cp.status) }}
+              </span>
+            </div>
+          }
+
           <div class="nav-divider"></div>
 
           <!-- Action Buttons -->
@@ -130,8 +141,13 @@ import {
               <label class="ctrl-label" for="period-select">Periode:</label>
               <div class="ctrl-select-group">
                 <select id="period-select" class="form-select-unified" [(ngModel)]="selectedPeriodId" (change)="onPeriodChange()">
+                  @if (periods().length === 0) {
+                    <option value="" disabled selected>Memuat periode...</option>
+                  }
                   @for (p of periods(); track p.id) {
-                    <option [value]="p.id">{{ p.period_month }} ({{ p.status }})</option>
+                    <option [value]="p.id">
+                      {{ p.period_month }} ({{ p.status === 'open' || p.status === 'active' ? 'Buka / Aktif' : (p.status === 'closed' ? 'Tutup' : p.status) }})
+                    </option>
                   }
                 </select>
                 <button class="btn-icon-delete" (click)="deleteSelectedPeriod()" title="Hapus periode terpilih">
@@ -464,8 +480,8 @@ import {
                     <tr style="border-bottom:1px solid #F1F5F9;">
                       <td style="padding:0.5rem;"><strong>{{ p.period_month }}</strong></td>
                       <td style="padding:0.5rem;">
-                        <span class="badge" [class.badge-success]="p.status==='active'" [class.badge-neutral]="p.status==='closed'">
-                          {{ p.status }}
+                        <span class="badge" [class.badge-success]="p.status==='open' || p.status==='active'" [class.badge-neutral]="p.status==='closed'">
+                          {{ p.status === 'open' || p.status === 'active' ? 'Buka / Aktif' : (p.status === 'closed' ? 'Tutup' : p.status) }}
                         </span>
                       </td>
                       <td style="padding:0.5rem; color:#64748B;">{{ p.opened_at | date:'dd/MM/yy' }}</td>
@@ -494,10 +510,15 @@ import {
                 Periode yang ditutup akan dikunci sehingga petugas lapangan tidak dapat lagi mengubah data stand meter pada periode tersebut.
               </p>
               <div style="margin-bottom:1rem;">
-                <label>Pilih Periode untuk Ditutup:</label>
-                <select [(ngModel)]="periodToCloseId">
+                <label style="display:block; margin-bottom:0.4rem; font-weight:600; font-size:0.875rem;">Pilih Periode untuk Ditutup:</label>
+                <select [(ngModel)]="periodToCloseId" class="form-select-unified" style="width:100%; height:40px;">
+                  @if (activePeriods().length === 0) {
+                    <option value="" disabled selected>Tidak ada periode aktif yang dapat ditutup</option>
+                  }
                   @for (p of activePeriods(); track p.id) {
-                    <option [value]="p.id">{{ p.period_month }} ({{ p.status }})</option>
+                    <option [value]="p.id">
+                      {{ p.period_month }} ({{ p.status === 'open' || p.status === 'active' ? 'Buka / Aktif' : p.status }})
+                    </option>
                   }
                 </select>
               </div>
@@ -689,6 +710,30 @@ import {
       border-radius: 50%;
       background: currentColor;
     }
+    .period-header-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.25rem 0.65rem;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 0.775rem;
+      color: #0F172A;
+      white-space: nowrap;
+    }
+    .period-pill-status {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #64748B;
+    }
+    .period-pill-status.open {
+      background: #DCFCE7;
+      color: #15803D;
+    }
     .nav-divider {
       width: 1px;
       height: 24px;
@@ -878,6 +923,7 @@ import {
       display: flex;
       align-items: center;
       gap: 0.45rem;
+      flex-shrink: 0;
     }
     .ctrl-label {
       font-size: 0.8125rem;
@@ -889,19 +935,24 @@ import {
       display: flex;
       align-items: center;
       gap: 0.35rem;
+      flex-shrink: 0;
     }
     .form-select-unified {
-      height: 36px;
+      height: 38px;
+      min-width: 175px;
       padding: 0.4rem 0.75rem;
       font-size: 0.8125rem;
       font-weight: 500;
       color: #0F172A;
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s ease;
       width: auto;
+    }
+    #period-select {
+      min-width: 200px;
     }
     .form-select-unified:focus {
       outline: none;
@@ -1354,7 +1405,8 @@ export class DashboardComponent implements OnInit {
     return this.filteredReadings().slice(start, start + this.pageSize);
   });
 
-  activePeriods = computed(() => this.periods().filter(p => p.status === 'active' || p.status === 'draft'));
+  currentPeriod = computed(() => this.periods().find(p => p.id === this.selectedPeriodId) || null);
+  activePeriods = computed(() => this.periods().filter(p => p.status === 'open' || p.status === 'active' || p.status === 'draft'));
 
   constructor() {}
 
@@ -1384,10 +1436,13 @@ export class DashboardComponent implements OnInit {
       next: (pList) => {
         this.periods.set(pList);
         if (pList.length > 0) {
-          // Pilih periode active pertama atau periode pertama
-          const active = pList.find(p => p.status === 'active') || pList[0];
+          // Pilih periode open dengan data readings jika ada, atau open pertama, atau periode pertama
+          const active = pList.find(p => (p.status === 'open' || p.status === 'active') && (p.readings_count || 0) > 0)
+                      || pList.find(p => p.status === 'open' || p.status === 'active')
+                      || pList[0];
           this.selectedPeriodId = active.id;
-          this.periodToCloseId = active.id;
+          const openPeriod = pList.find(p => p.status === 'open' || p.status === 'active');
+          this.periodToCloseId = openPeriod ? openPeriod.id : active.id;
           this.loadReadings();
         } else {
           this.isLoading.set(false);
@@ -1548,6 +1603,7 @@ export class DashboardComponent implements OnInit {
         this.closeModal();
         this.periods.update(list => [p, ...list]);
         this.selectedPeriodId = p.id;
+        this.periodToCloseId = p.id;
         this.loadReadings();
         alert(`Periode ${p.period_month} berhasil dibuka!`);
       },
